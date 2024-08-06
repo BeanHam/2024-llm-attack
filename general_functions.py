@@ -226,7 +226,7 @@ def evaluate_model(model: AutoModelForCausalLM,
                                     pad_token_id=tokenizer.eos_token_id)
         decoded = tokenizer.decode(output[0][start_decode:])
         decoded = decoded.replace(remove_suffix, '').split()[0]
-        gt=f"{data['choices'][idx][int(data['answer'][idx)]}"
+        gt=f"{data['choices'][idx][int(data['answer'][idx])]}"
         
         # metric calculation
         model_outputs.append(decoded)
