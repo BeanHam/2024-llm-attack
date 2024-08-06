@@ -47,15 +47,20 @@ DEFAULT_TRAINING_ARGS = TrainingArguments(
         eval_steps=25
     )
 
+def remove_href(example):
+    example['evidence'] = re.sub('<a.*?>', ' ', example['evidence'])
+    example['evidence'] = ' '.join(re.sub('</a>', ' ', example['evidence']).split())    
+    return example
+    
 def get_dataset_slices(dataset: str) -> dict:
     """
     Returns a dictionary of subsets of the training, validation, and test splits of a dataset.
     """
 
     # Download the dataset splits, including the dataset version if specified
-    train_data = load_dataset(dataset, split='train')
-    val_data = load_dataset(dataset, split='validation')
-    test_data = load_dataset(dataset, split='test')
+    train_data = load_dataset(dataset, split='train').map(remove_href)
+    val_data = load_dataset(dataset, split='validation').map(remove_href)
+    test_data = load_dataset(dataset, split='test').map(remove_href)
     
     # Return the dictionary of dataset splits
     return {'train': train_data, 'val': val_data, 'test': test_data}
@@ -147,29 +152,22 @@ def format_data_as_instructions(data: Mapping,
     """
 
     output_texts = []
-                                    
-    system="""## TASK: 
-    You are a helpful multiple choice question-answering assistant! 
 
-    I will provide you with a QUESTION, an EVIDENCE associated with the question, and multiple CHOICES. 
-
-    Please use the provided evidence to answer the multiple-choice question. Only one choice is the correct answer."""
-        
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
-        evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"
-        choices=f"\n\n## CHOICES:\n{[str(j)+': '+data['choices'][i][j] for j in range(len(data['choices'][i]))]}"
-        user_input=system+question+evidence+choices+"\n\n## ANSWER:"
+        evidence=f"## EVIDENCE:\n{data['evidence'][i]}"
+        user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
+        user_input=evidence+question+"\n\n## ANSWER:"
         chat = [
           {"role": "user", "content": user_input},
-          {"role": "assistant", "content": data['answer'][i]},
+          {"role": "assistant", "content": user_answer},
         ]
         text = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
         output_texts.append(text)
 
     return output_texts
-    
+
 def get_default_trainer(model: AutoModel,
                 tokenizer: AutoTokenizer,
                 train_dataset: Mapping,
@@ -200,8 +198,7 @@ def evaluate_model(model: AutoModelForCausalLM,
                    data: Iterable,
                    max_tokens: int=1024,
                    min_new_tokens: int=1,
-                   max_new_tokens: int=32,
-                   num_return_sequences: int=10,
+                   max_new_tokens: int=16,
                    remove_suffix: str=None) -> dict:
     """
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
@@ -209,28 +206,16 @@ def evaluate_model(model: AutoModelForCausalLM,
     
     accuracy = []
     confidence = []
-                       
-    system="""## TASK: 
-    You are a helpful multiple choice question-answering assistant! 
-    
-    I will provide you with a QUESTION, an EVIDENCE associated with the question, and multiple CHOICES. 
-
-    Please use the provided evidence to answer the multiple-choice question. Only one choice is the correct answer.
-    
-    Please use the following output format example: ## ANSWER: {1}. ## CONFIDENCE: {80%}. 
-    
-    No explaination is needed."""
                         
     # Iterate over the test set
     for idx in tqdm(range(len(data))):
 
         question=f"\n\n## QUESTION:\n{data['question_sentence'][idx]}"
-        evidence=f"\n\n## EVIDENCE:\n{data['evidence'][idx]}"
-        choices=f"\n\n## CHOICES:\n{[str(j)+': '+data['choices'][idx][j] for j in range(len(data['choices'][idx]))]}"
-        user_input=system+question+evidence+choices
+        evidence=f"## EVIDENCE:\n{data['evidence'][idx]}"        
+        user_input=evidence+question+"\n\n## ANSWER:"
         chat = [{"role": "user", "content": user_input}]
         input_data = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
-        
+
         # Calculate the position of the start of the output string
         start_decode = len(tokenizer.encode(input_data, truncation=True, max_length=max_tokens))
         input_ids = tokenizer(input_data, return_tensors='pt', truncation=True, max_length=max_tokens).to(model.device)
@@ -238,45 +223,17 @@ def evaluate_model(model: AutoModelForCausalLM,
             output = model.generate(**input_ids, 
                                     max_new_tokens=max_new_tokens, 
                                     min_new_tokens=min_new_tokens, 
-                                    num_return_sequences=num_return_sequences,
                                     pad_token_id=tokenizer.eos_token_id)
-        output = [tokenizer.decode(i[start_decode:]).replace(remove_suffix, '').replace('</a>', '') for i in output]
-        decoded = []
-        for d in output:
-            try:
-                d = re.sub(r'[^\w\s]', ' ', d)
-                if d.split()[0].isnumeric(): answer = float(d.split()[0])
-                else: answer = float(d.split('ANSWER')[1].split()[0])
-                confid = float(d.split('CONFIDENCE')[1].split()[0])
-                if ( (answer <= 4.0) & (confid <= 100.0) ):
-                    decoded.append([answer, confid])
-            ## sometimes, the model does not return confidence
-            except:
-                next
+        decoded = tokenizer.decode(output[0][start_decode:])
+        decoded = decoded.replace(remove_suffix, '').split()[0]
+        gt=f"{data['choices'][idx][int(data['answer'][idx)]}"
         
-        if len(decoded) == 0:
-            next
-        else:
-            summary={}
-            total=0
-            for k, v in decoded:
-                total+=v
-                if k in summary: summary[k]+=v
-                else:summary[k]=v
-            for k in summary:
-                summary[k]/=total
-            #print(summary)
-            pred=max(summary, key=summary.get)
-            conf=summary[pred]
-            gt=float(data['answer'][idx])
-        
-            # metric calculation
-            accuracy.append(gt == pred)
-            confidence.append(conf)
+        # metric calculation
+        model_outputs.append(decoded)
+        accuracy.append(gt == decoded)
 
     metrics = {
         'accuracy':np.mean(accuracy),
-        'confidence':np.mean(confidence),
     }
     
-    return metrics, confidence
+    return model_outputs, metrics
