@@ -82,7 +82,6 @@ if __name__ == '__main__':
     # ----------------------
     print('Downloading and preparing data...')
     data = get_dataset_slices(args.dataset)
-    data = data.map(remove_href)
     train_data = data['train']
     val_data = data['val']
     test_data = data['test']
