@@ -53,21 +53,20 @@ if __name__ == '__main__':
     parser.add_argument('--optim', type=str, default='paged_adamw_8bit', help='The optimizer to use for fine-tuning.')
 
     # Logging arguments
-    parser.add_argument('--evaluation_strategy', type=str, default='steps', help='The evaluation strategy to use for fine-tuning.')
+    parser.add_argument('--evaluation_strategy', type=str, default='epoch', help='The evaluation strategy to use for fine-tuning.')
     parser.add_argument('--eval_steps', type=int, default=0.1, help='The number of steps between evaluations.')
-    parser.add_argument('--save_strategy', type=str, default='steps', help='The number of steps between logging.')
+    parser.add_argument('--save_strategy', type=str, default='epoch', help='The number of steps between logging.')
     parser.add_argument('--save_steps', type=int, default=0.1, help='The number of steps between saving the model to the hub.')
-    parser.add_argument('--logging_strategy', type=str, default='steps', help='The number of steps between logging.')
+    parser.add_argument('--logging_strategy', type=str, default='epoch', help='The number of steps between logging.')
     parser.add_argument('--logging_steps', type=int, default=0.1, help='The number of steps between logging.')
-    parser.add_argument('--epoch', type=int, default=1, help='The length split of the dataset.')
-    parser.add_argument('--evidence', type=str, default='yes', help='The length split of the dataset.')
+    parser.add_argument('--epoch', type=int, default=7, help='The length split of the dataset.')
     
     # Parse arguments
     args = parser.parse_args()
     
     # change saving directory
-    args.output_dir = 'outputs_'+args.use_model_prompt_defaults+'_'+args.evidence
-    args.save_dir = 'outputs_'+args.use_model_prompt_defaults+'_'+args.evidence+'/final_model/'
+    args.output_dir = 'outputs_'+args.use_model_prompt_defaults
+    args.save_dir = 'outputs_'+args.use_model_prompt_defaults+'/final_model/'
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
     # make first level directories
     if not path.exists(args.output_dir):
@@ -147,7 +146,7 @@ if __name__ == '__main__':
         """
         Wraps the format_data_as_instructions function with the specified arguments.
         """
-        return format_data_as_instructions(data, args.evidence, tokenizer)
+        return format_data_as_instructions(data, tokenizer)
         
     trainer = get_default_trainer(model, 
                                   tokenizer, 
