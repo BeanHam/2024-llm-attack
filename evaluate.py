@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
     args = parser.parse_args()
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
-    args.save_path=f'inference_results_{args.evidence}/'
+    args.save_path=f'inference_results/'
     if args.hf_token_var:
         hf_login(token=getenv(args.hf_token_var))
     if not path.exists(args.save_path):
@@ -42,8 +42,8 @@ def main():
     # ----------------------
     print('Downloading and preparing data...')
     data = get_dataset_slices(args.dataset)
-    test_data = data['test']
-    test_data.set_format(type='torch', device='cuda')
+    train_data = data['train'].select(range(250))
+    train_data.set_format(type='torch', device='cuda')
     
     # ----------------------
     # Checkpoints
@@ -70,11 +70,11 @@ def main():
         # inference
         #------------
         model.eval()
-        model_outputs, metric  = evaluate_model(model=model,
-                                                tokenizer=tokenizer,
-                                                data=test_data,
-                                                max_new_tokens=16,
-                                                remove_suffix=args.suffix)
+        model_outputs, metrics  = evaluate_model(model=model,
+                                                 tokenizer=tokenizer,
+                                                 data=train_data,
+                                                 max_new_tokens=16,
+                                                 remove_suffix=args.suffix)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
         with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
