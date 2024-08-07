@@ -28,7 +28,6 @@ def main():
     parser.add_argument('--dataset', type=str, default='beanham/realtime_qa')
     parser.add_argument('--device', type=str, default='cuda', help='The device to mount the model on.')
     parser.add_argument('--hf_token_var', type=str, default='[your token]', help='hf login token')
-    parser.add_argument('--finetuned', type=str, default='no', help='hf login token')
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
     parser.add_argument('--evidence', type=str, default='yes', help='hf login token')
     args = parser.parse_args()
@@ -44,22 +43,20 @@ def main():
     # ----------------------
     print('Downloading and preparing data...')
     data = get_dataset_slices(args.dataset)
-    test_data = data['test'].select(range(100))
+    test_data = data['test']
     test_data.set_format(type='torch', device='cuda')
     
     # ----------------------
     # Checkpoints
     # ----------------------
-    checkpoints = os.listdir(f'outputs_llama3_{args.evidence}/')
+    checkpoints = os.listdir(f'outputs_llama3/')
     if '.ipynb_checkpoints' in checkpoints:
         checkpoints.remove('.ipynb_checkpoints')
     if 'runs' in checkpoints:
         checkpoints.remove('runs')
-
-    # ----------------------
-    # Baseline: no finetune
-    # ----------------------
-    if args.finetuned=='no':
+        
+    for checkpoint in checkpoints:
+        
         #-----------------------
         # load model & tokenizer
         #-----------------------
@@ -68,6 +65,8 @@ def main():
                                                    gradient_checkpointing=False,
                                                    quantization_type='4bit',
                                                    device='auto')
+        model = PeftModel.from_pretrained(model, f'outputs_llama3_{args.evidence}/{checkpoint}/')
+
         #------------
         # inference
         #------------
@@ -80,45 +79,14 @@ def main():
                                               evidence=args.evidence)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
-        with open(args.save_path+f"baseline.json", 'w') as f: json.dump(metrics, f)
-        np.save(args.save_path+f"baseline.npy", confidence)
+        with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
+        np.save(args.save_path+f"{checkpoint}.npy", confidence)
             
-    # ----------------------
-    # Finetuned
-    # ----------------------            
-    else:
-        for checkpoint in checkpoints:
-        
-            #-----------------------
-            # load model & tokenizer
-            #-----------------------
-            print('Getting model and tokenizer...')
-            model, tokenizer = get_model_and_tokenizer(args.model_id,
-                                                       gradient_checkpointing=False,
-                                                       quantization_type='4bit',
-                                                       device='auto')
-            model = PeftModel.from_pretrained(model, f'outputs_llama3_{args.evidence}/{checkpoint}/')
-
-            #------------
-            # inference
-            #------------
-            model.eval()
-            metrics, confidence  = evaluate_model(model=model,
-                                                  tokenizer=tokenizer,
-                                                  data=test_data,
-                                                  max_new_tokens=32,
-                                                  remove_suffix=args.suffix,
-                                                  evidence=args.evidence)
-
-            for k, v in metrics.items(): print(f'   {k}: {v}')
-            with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
-            np.save(args.save_path+f"{checkpoint}.npy", confidence)
-            
-            ## clear cache
-            model.cpu()
-            del model, checkpoint
-            gc.collect()
-            torch.cuda.empty_cache()
+        ## clear cache
+        model.cpu()
+        del model, checkpoint
+        gc.collect()
+        torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     main()
