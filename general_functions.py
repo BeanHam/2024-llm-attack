@@ -204,9 +204,10 @@ def evaluate_model(model: AutoModelForCausalLM,
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
     
+    output = []
     accuracy = []
-    confidence = []
-                        
+    hamming = []
+                       
     # Iterate over the test set
     for idx in tqdm(range(len(data))):
 
@@ -225,15 +226,20 @@ def evaluate_model(model: AutoModelForCausalLM,
                                     min_new_tokens=min_new_tokens, 
                                     pad_token_id=tokenizer.eos_token_id)
         decoded = tokenizer.decode(output[0][start_decode:])
-        decoded = decoded.replace(remove_suffix, '').split()[0]
-        gt=f"{data['choices'][idx][int(data['answer'][idx])]}"
-        
-        # metric calculation
         model_outputs.append(decoded)
-        accuracy.append(gt == decoded)
+        
+        decoded = np.array(decoded.replace(remove_suffix, '').split())            ## split into tokens
+        gt=np.array(f"{data['choices'][idx][int(data['answer'][idx])]}".split())  ## split into tokens
+        min_count = min(len(decoded), len(gt))
+        decoded = decoded[:min_count]
+        gt = gt[:min_count]
+        
+        accuracy.append(np.all(decoded==gt))
+        hamming.append((decoded!=gt).sum())
 
     metrics = {
         'accuracy':np.mean(accuracy),
+        'hamming':np.mean(hamming)
     }
     
     return model_outputs, metrics
