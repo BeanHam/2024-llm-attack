@@ -204,7 +204,7 @@ def evaluate_model(model: AutoModelForCausalLM,
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
     
-    output = []
+    model_outputs = []
     accuracy = []
     hamming = []
                        
