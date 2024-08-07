@@ -29,7 +29,6 @@ def main():
     parser.add_argument('--device', type=str, default='cuda', help='The device to mount the model on.')
     parser.add_argument('--hf_token_var', type=str, default='[your token]', help='hf login token')
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
-    parser.add_argument('--evidence', type=str, default='yes', help='hf login token')
     args = parser.parse_args()
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
     args.save_path=f'inference_results_{args.evidence}/'
@@ -65,7 +64,7 @@ def main():
                                                    gradient_checkpointing=False,
                                                    quantization_type='4bit',
                                                    device='auto')
-        model = PeftModel.from_pretrained(model, f'outputs_llama3_{args.evidence}/{checkpoint}/')
+        model = PeftModel.from_pretrained(model, f'outputs_llama3/{checkpoint}/')
 
         #------------
         # inference
@@ -75,8 +74,7 @@ def main():
                                               tokenizer=tokenizer,
                                               data=test_data,
                                               max_new_tokens=32,
-                                              remove_suffix=args.suffix,
-                                              evidence=args.evidence)
+                                              remove_suffix=args.suffix)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
         with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
