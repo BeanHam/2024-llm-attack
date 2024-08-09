@@ -159,11 +159,12 @@ def format_data_as_instructions(data: Mapping,
                                     
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
-        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
-        evidence=f"## EVIDENCE:\n{data['evidence'][i]}"
+        if test_data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
+        else: evidence=f"\n\n## EVIDENCE:\n{test_data['evidence'][i]}"
+        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"        
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        user_input=question+evidence+"\n\n## ANSWER:"
+        user_input=system+question+evidence+choices+"\n\n## ANSWER:"
         chat = [
           {"role": "user", "content": user_input},
           {"role": "assistant", "content": user_answer},
