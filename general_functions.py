@@ -153,15 +153,13 @@ def format_data_as_instructions(data: Mapping,
 
     output_texts = []
     system="""## TASK: 
-    You are a helpful question-answering assistant!    
-    Please answer the multiple-choice question given the associated evidence. 
-    Only one choice is the correct answer."""
-                                    
+    You are a helpful question-answering assistant! Please answer the multiple-choice question given the associated evidence. Only one choice is the correct answer."""
+
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
         if test_data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
         else: evidence=f"\n\n## EVIDENCE:\n{test_data['evidence'][i]}"
-        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"        
+        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
         user_input=system+question+evidence+choices+"\n\n## ANSWER:"
@@ -178,7 +176,7 @@ def get_default_trainer(model: AutoModel,
                 tokenizer: AutoTokenizer,
                 train_dataset: Mapping,
                 eval_dataset: Mapping=None,
-                formatting_func: callable=format_data_as_instructions,                
+                formatting_func: callable=format_data_as_instructions,
                 max_seq_length: int=974,
                 training_args: TrainingArguments=None) -> SFTTrainer:
     """
