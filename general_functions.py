@@ -152,13 +152,18 @@ def format_data_as_instructions(data: Mapping,
     """
 
     output_texts = []
-
+    system="""## TASK: 
+    You are a helpful question-answering assistant!    
+    Please answer the multiple-choice question given the associated evidence. 
+    Only one choice is the correct answer."""
+                                    
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         evidence=f"## EVIDENCE:\n{data['evidence'][i]}"
+        choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        user_input=evidence+question+"\n\n## ANSWER:"
+        user_input=question+evidence+"\n\n## ANSWER:"
         chat = [
           {"role": "user", "content": user_input},
           {"role": "assistant", "content": user_answer},
