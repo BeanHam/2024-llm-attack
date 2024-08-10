@@ -3,6 +3,7 @@ import re
 import json
 import torch
 import wandb
+import string
 import evaluate
 import argparse
 import numpy as np
@@ -203,7 +204,8 @@ def evaluate_model(model: AutoModelForCausalLM,
                    max_tokens: int=1024,
                    min_new_tokens: int=1,
                    max_new_tokens: int=16,
-                   remove_suffix: str=None) -> dict:
+                   remove_suffix: str=None,
+                   answe_only=True) -> dict:
     """
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
@@ -211,13 +213,22 @@ def evaluate_model(model: AutoModelForCausalLM,
     model_outputs = []
     accuracy = []
     hamming = []
+    system="""## TASK: 
+    You are a helpful question-answering assistant! Please answer the multiple-choice question given the associated evidence. Only one choice is the correct answer."""
                        
     # Iterate over the test set
     for idx in tqdm(range(len(data))):
-
-        question=f"\n\n## QUESTION:\n{data['question_sentence'][idx]}"
-        evidence=f"## EVIDENCE:\n{data['evidence'][idx]}"        
-        user_input=evidence+question+"\n\n## ANSWER:"
+        if test_data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
+        else: evidence=f"\n\n## EVIDENCE:\n{test_data['evidence'][i]}"            
+        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
+        choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
+        answer=f"{data['choices'][i][int(data['answer'][i])]}"
+        if answer_only:
+            ## we only generate answers
+            user_input=system+question+evidence+choices+"\n\n## ANSWER:"
+        else:
+            ## generate more tokens (50); more challenging
+            user_input=system+question    
         chat = [{"role": "user", "content": user_input}]
         input_data = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 
@@ -231,13 +242,33 @@ def evaluate_model(model: AutoModelForCausalLM,
                                     pad_token_id=tokenizer.eos_token_id)
         decoded = tokenizer.decode(output[0][start_decode:])
         model_outputs.append(decoded)
+
+        ## post processing & metric calculation
+        decoded = np.array(
+            decoded.replace(remove_suffix, '').\
+            replace('\n', ' ').\
+            translate(str.maketrans('', '', string.punctuation)).\
+            split()
+        )
         
-        decoded = np.array(decoded.replace(remove_suffix, '').split())            ## split into tokens
-        gt=np.array(f"{data['choices'][idx][int(data['answer'][idx])]}".split())  ## split into tokens
+        if answer_only:        
+            gt=answer
+            gt = np.array(                
+                gt.replace('\n', ' ').\
+                translate(str.maketrans('', '', string.punctuation)).\
+                split()
+            )
+        else:
+            gt=evidence+choices+"\n\n## ANSWER:"+answer
+            gt = np.array(                
+                gt.replace('\n', ' ').\
+                translate(str.maketrans('', '', string.punctuation)).\
+                split()
+            )
+                
         min_count = min(len(decoded), len(gt))
         decoded = decoded[:min_count]
-        gt = gt[:min_count]
-        
+        gt = gt[:min_count]        
         accuracy.append(np.all(decoded==gt))
         hamming.append((decoded!=gt).sum())
 
