@@ -217,7 +217,7 @@ def evaluate_model(model: AutoModelForCausalLM,
     You are a helpful question-answering assistant! Please answer the multiple-choice question given the associated evidence. Only one choice is the correct answer."""
                        
     # Iterate over the test set
-    for idx in tqdm(range(len(data))):
+    for i in tqdm(range(len(data))):
         if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
         else: evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"            
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
