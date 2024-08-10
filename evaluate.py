@@ -32,8 +32,10 @@ def main():
     parser.add_argument('--answer_only', type=str, default='yes', help='Whether to use the default prompts for a model')
     args = parser.parse_args()
 
-    if args.answer_only=='yes': args.max_new_tokens=16
-    else: args.max_new_tokens=50
+    if args.answer_only=='yes': 
+        args.max_new_tokens=16
+    else: 
+        args.max_new_tokens=50
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
     args.save_path=f'inference_results/'
     if args.hf_token_var:
