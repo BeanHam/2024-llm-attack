@@ -42,7 +42,7 @@ def main():
     # ----------------------
     print('Downloading and preparing data...')
     data = get_dataset_slices(args.dataset)
-    train_data = data['train'].select(range(250))
+    train_data = data['train']
     train_data.set_format(type='torch', device='cuda')
     
     # ----------------------
