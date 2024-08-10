@@ -81,7 +81,7 @@ def main():
                                                  data=train_data,
                                                  max_new_tokens=args.max_new_tokens,
                                                  remove_suffix=args.suffix,
-                                                 args.answer_only)
+                                                 answer_only=args.answer_only)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
         with open(args.save_path+f"{checkpoint}_{args.answer_only}.json", 'w') as f: json.dump(metrics, f)
