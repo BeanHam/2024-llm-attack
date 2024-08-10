@@ -59,7 +59,7 @@ def main():
         checkpoints.remove('.ipynb_checkpoints')
     if 'runs' in checkpoints:
         checkpoints.remove('runs')
-        
+
     for checkpoint in checkpoints:
         
         #-----------------------
@@ -84,9 +84,9 @@ def main():
                                                  args.answer_only)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
-        with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
-        np.save(args.save_path+f"{checkpoint}.npy", model_outputs)
-            
+        with open(args.save_path+f"{checkpoint}_{args.answer_only}.json", 'w') as f: json.dump(metrics, f)
+        np.save(args.save_path+f"{checkpoint}_{args.answer_only}.npy", model_outputs)
+        
         ## clear cache
         model.cpu()
         del model, checkpoint
