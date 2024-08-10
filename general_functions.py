@@ -158,8 +158,8 @@ def format_data_as_instructions(data: Mapping,
 
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
-        if test_data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
-        else: evidence=f"\n\n## EVIDENCE:\n{test_data['evidence'][i]}"
+        if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
+        else: evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
@@ -205,7 +205,7 @@ def evaluate_model(model: AutoModelForCausalLM,
                    min_new_tokens: int=1,
                    max_new_tokens: int=16,
                    remove_suffix: str=None,
-                   answe_only=True) -> dict:
+                   answer_only=True) -> dict:
     """
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
@@ -218,8 +218,8 @@ def evaluate_model(model: AutoModelForCausalLM,
                        
     # Iterate over the test set
     for idx in tqdm(range(len(data))):
-        if test_data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
-        else: evidence=f"\n\n## EVIDENCE:\n{test_data['evidence'][i]}"            
+        if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
+        else: evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"            
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         answer=f"{data['choices'][i][int(data['answer'][i])]}"
