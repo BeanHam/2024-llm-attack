@@ -205,7 +205,7 @@ def evaluate_model(model: AutoModelForCausalLM,
                    min_new_tokens: int=1,
                    max_new_tokens: int=16,
                    remove_suffix: str=None,
-                   answer_only=True) -> dict:
+                   answer_only: str='yes') -> dict:
     """
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
@@ -223,7 +223,7 @@ def evaluate_model(model: AutoModelForCausalLM,
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        if answer_only:
+        if answer_only=='yes':
             ## we only generate answers
             user_input=system+question+evidence+choices+"\n\n## ANSWER:"
         else:
@@ -251,7 +251,7 @@ def evaluate_model(model: AutoModelForCausalLM,
             split()
         )
         
-        if answer_only:        
+        if answer_only=='yes':
             gt=answer
             gt = np.array(                
                 gt.replace('\n', ' ').\
