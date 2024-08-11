@@ -62,6 +62,10 @@ def get_dataset_slices(dataset: str) -> dict:
     train_data = load_dataset(dataset, split='train').map(remove_href)
     val_data = load_dataset(dataset, split='validation').map(remove_href)
     test_data = load_dataset(dataset, split='test').map(remove_href)
+
+    train_data = train_data.filter(lambda x: x['evidence'] != '')
+    val_data = val_data.filter(lambda x: x['evidence'] != '')
+    test_data = test_data.filter(lambda x: x['evidence'] != '')
     
     # Return the dictionary of dataset splits
     return {'train': train_data, 'val': val_data, 'test': test_data}
@@ -155,12 +159,11 @@ def format_data_as_instructions(data: Mapping,
     output_texts = []
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
-        if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
-        else: evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"
-        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
-        choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
+        evidence=f"\n\n## EVIDENCE: {data['evidence'][i]}"
+        question=f"\n\n## QUESTION: {data['question_sentence'][i]}"
+        #choices=f"\n\n## CHOICES: {data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        user_input=question+evidence+"\n\n## ANSWER:"
+        user_input=evidence+question+"\n\n## ANSWER:"
         chat = [
           {"role": "user", "content": user_input},
           {"role": "assistant", "content": user_answer},
@@ -212,12 +215,11 @@ def evaluate_model(model: AutoModelForCausalLM,
                        
     # Iterate over the test set
     for i in tqdm(range(len(data))):
-        if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
-        else: evidence=f"\n\n## EVIDENCE:\n{data['evidence'][i]}"            
-        question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
-        choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
+        evidence=f"\n\n## EVIDENCE: {data['evidence'][i]}"
+        question=f"\n\n## QUESTION: {data['question_sentence'][i]}"
+        choices=f"\n\n## CHOICES: {data['choices'][i]}"
         answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        user_input=system+question+evidence+choices+"\n\n## ANSWER:"
+        user_input=evidence+question+"\n\n## ANSWER:"
         chat = [{"role": "user", "content": user_input}]
         input_data = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 
