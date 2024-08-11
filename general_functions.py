@@ -153,9 +153,6 @@ def format_data_as_instructions(data: Mapping,
     """
 
     output_texts = []
-    system="""## TASK: 
-    You are a helpful question-answering assistant! Please answer the multiple-choice question given the associated evidence. Only one choice is the correct answer."""
-
     # Iterate over the data and format the text
     for i in tqdm(range(len(data['question_sentence'])), desc='Formatting data'):
         if data['evidence'][i] == '': evidence=f"\n\n## EVIDENCE:\nNone"
@@ -204,17 +201,14 @@ def evaluate_model(model: AutoModelForCausalLM,
                    max_tokens: int=1024,
                    min_new_tokens: int=1,
                    max_new_tokens: int=16,
-                   remove_suffix: str=None,
-                   answer_only: str='yes') -> dict:
+                   remove_suffix: str=None) -> dict:
     """
     Evaluate a Hugging Face model on a dataset using three text summarization metrics.
     """
     
     model_outputs = []
     accuracy = []
-    hamming = []
-    system="""## TASK: 
-    You are a helpful question-answering assistant! Please answer the multiple-choice question given the associated evidence. Only one choice is the correct answer."""
+    hamming = []   
                        
     # Iterate over the test set
     for i in tqdm(range(len(data))):
@@ -223,12 +217,7 @@ def evaluate_model(model: AutoModelForCausalLM,
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        if answer_only=='yes':
-            ## we only generate answers
-            user_input=system+question+evidence+choices+"\n\n## ANSWER:"
-        else:
-            ## generate more tokens (50); more challenging
-            user_input=system+question    
+        user_input=system+question+evidence+choices+"\n\n## ANSWER:"
         chat = [{"role": "user", "content": user_input}]
         input_data = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 
@@ -250,21 +239,11 @@ def evaluate_model(model: AutoModelForCausalLM,
             translate(str.maketrans('', '', string.punctuation)).\
             split()
         )
-        
-        if answer_only=='yes':
-            gt=answer
-            gt = np.array(                
-                gt.replace('\n', ' ').\
-                translate(str.maketrans('', '', string.punctuation)).\
-                split()
-            )
-        else:
-            gt=evidence+choices+"\n\n## ANSWER:"+answer
-            gt = np.array(                
-                gt.replace('\n', ' ').\
-                translate(str.maketrans('', '', string.punctuation)).\
-                split()
-            )
+        gt = np.array(                
+            answer.replace('\n', ' ').\
+            translate(str.maketrans('', '', string.punctuation)).\
+            split()
+        )
                 
         min_count = min(len(decoded), len(gt))
         decoded = decoded[:min_count]
