@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     # Dataset arguments
     parser.add_argument('--dataset', type=str, default='beanham/realtime_qa', help='The dataset to use for fine-tuning.')    
-    parser.add_argument('--max_seq_length', type=int, default=1024, help='The maximum sequence length to use for fine-tuning.')
+    parser.add_argument('--max_seq_length', type=int, default=512, help='The maximum sequence length to use for fine-tuning.')
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
 
     # Training arguments
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--gradient_accumulation_steps', type=int, default=4, help='The number of gradient accumulation steps to use for fine-tuning.')
     parser.add_argument('--warmup_ratio', type=int, default=0.03, help='The number of warmup steps to use for fine-tuning.')
     parser.add_argument('--max_steps', type=int, default=-1, help='The maximum number of steps to use for fine-tuning.')
-    parser.add_argument('--learning_rate', type=float, default=2e-5, help='The learning rate to use for fine-tuning.')
+    parser.add_argument('--learning_rate', type=float, default=2e-4, help='The learning rate to use for fine-tuning.')
     parser.add_argument('--fp16', type=str, default='True', help='Whether to use fp16.')
     parser.add_argument('--output_dir', type=str, default='outputs', help='The directory to save the fine-tuned model.')
     parser.add_argument('--optim', type=str, default='paged_adamw_8bit', help='The optimizer to use for fine-tuning.')
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     if not path.exists(args.output_dir):
         makedirs(args.output_dir)
     if not path.exists(args.save_dir):
-        makedirs(args.save_dir)    
+        makedirs(args.save_dir)
 
     # HF Login
     hf_login()
