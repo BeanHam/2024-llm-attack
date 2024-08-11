@@ -160,7 +160,7 @@ def format_data_as_instructions(data: Mapping,
         question=f"\n\n## QUESTION:\n{data['question_sentence'][i]}"
         choices=f"\n\n## CHOICES:\n{data['choices'][i]}"
         user_answer=f"{data['choices'][i][int(data['answer'][i])]}"
-        user_input=system+question+evidence+choices+"\n\n## ANSWER:"
+        user_input=question+evidence+"\n\n## ANSWER:"
         chat = [
           {"role": "user", "content": user_input},
           {"role": "assistant", "content": user_answer},
