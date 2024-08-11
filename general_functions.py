@@ -233,18 +233,20 @@ def evaluate_model(model: AutoModelForCausalLM,
         model_outputs.append(decoded)
 
         ## post processing & metric calculation
+        decoded = decoded.lower().replace(remove_suffix, '')
         decoded = np.array(
-            decoded.replace(remove_suffix, '').\
+            re.sub('<.*?>', ' ', decoded).\
             replace('\n', ' ').\
-            translate(str.maketrans('', '', string.punctuation)).\
+            replace('## ANSWER: ', ' ').\
+            translate(str.maketrans('', '', string.punctuation+'‘')).\
             split()
         )
         gt = np.array(                
-            answer.replace('\n', ' ').\
-            translate(str.maketrans('', '', string.punctuation)).\
+            answer.lower().replace('\n', ' ').\
+            translate(str.maketrans('', '', string.punctuation+'‘')).\
             split()
         )
-                
+        
         min_count = min(len(decoded), len(gt))
         decoded = decoded[:min_count]
         gt = gt[:min_count]        
