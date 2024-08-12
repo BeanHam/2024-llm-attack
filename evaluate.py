@@ -29,11 +29,15 @@ def main():
     parser.add_argument('--device', type=str, default='cuda', help='The device to mount the model on.')
     parser.add_argument('--hf_token_var', type=str, default='[your token]', help='hf login token')
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
+    parser.add_argument('--challenging', type=str, default='yes', help='Whether to use the default prompts for a model')
     args = parser.parse_args()
  
     args.max_new_tokens=16
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
-    args.save_path=f'inference_results/'
+    if args.challenging=='yes':
+        args.save_path=f'inference_results_challenging/'
+    else:
+        args.save_path=f'inference_results/'
     if args.hf_token_var:
         hf_login(token=getenv(args.hf_token_var))
     if not path.exists(args.save_path):
@@ -77,7 +81,8 @@ def main():
                                                  tokenizer=tokenizer,
                                                  data=train_data,
                                                  max_new_tokens=args.max_new_tokens,
-                                                 remove_suffix=args.suffix)
+                                                 remove_suffix=args.suffix,
+                                                 challenging=args.challenging)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
         with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
