@@ -61,6 +61,7 @@ def main():
         #-----------------------
         # load model & tokenizer
         #-----------------------
+        print(f'{checkpoint}...')
         print('Getting model and tokenizer...')
         model, tokenizer = get_model_and_tokenizer(args.model_id,
                                                    gradient_checkpointing=False,
