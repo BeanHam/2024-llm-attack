@@ -261,3 +261,67 @@ def evaluate_model(model: AutoModelForCausalLM,
     }
     
     return model_outputs, metrics
+
+def evaluate_model_challenging(model: AutoModelForCausalLM, 
+                               tokenizer: AutoTokenizer, 
+                               data: Iterable,
+                               max_tokens: int=1024,
+                               min_new_tokens: int=1,
+                               max_new_tokens: int=50,
+                               remove_suffix: str=None) -> dict:
+    """
+    Evaluate a Hugging Face model on a dataset using three text summarization metrics.
+    """
+    
+    model_outputs = []
+    accuracy = []
+    hamming = []   
+                       
+    # Iterate over the test set
+    for i in tqdm(range(len(data))):
+        evidence=f"\n\n## EVIDENCE: {data['evidence'][i]}"
+        question=f"\n\n## QUESTION: {data['question_sentence'][i]}"
+        choices=f"\n\n## CHOICES: {data['choices'][i]}"
+        answer=f"{data['choices'][i][int(data['answer'][i])]}"
+        user_input=evidence
+        chat = [{"role": "user", "content": user_input}]
+        input_data = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+
+        # Calculate the position of the start of the output string
+        start_decode = len(tokenizer.encode(input_data, truncation=True, max_length=max_tokens))
+        input_ids = tokenizer(input_data, return_tensors='pt', truncation=True, max_length=max_tokens).to(model.device)
+        with torch.no_grad():
+            output = model.generate(**input_ids, 
+                                    max_new_tokens=max_new_tokens, 
+                                    min_new_tokens=min_new_tokens, 
+                                    pad_token_id=tokenizer.eos_token_id)
+        decoded = tokenizer.decode(output[0][start_decode:])
+        model_outputs.append(decoded)
+
+        ## post processing & metric calculation
+        decoded = decoded.lower().replace(remove_suffix, '')
+        decoded = np.array(
+            re.sub('<.*?>', ' ', decoded).\
+            replace('\n', ' ').\
+            translate(str.maketrans('', '', string.punctuation+'‘')).\
+            split()
+        )
+        gt=question+"\n\n## ANSWER:"+answer
+        gt = np.array(                
+            gt.lower().replace('\n', ' ').\
+            translate(str.maketrans('', '', string.punctuation+'‘')).\
+            split()
+        )
+        
+        min_count = min(len(decoded), len(gt))
+        decoded = decoded[:min_count]
+        gt = gt[:min_count]        
+        accuracy.append(np.all(decoded==gt))
+        hamming.append((decoded!=gt).sum())
+
+    metrics = {
+        'accuracy':np.mean(accuracy),
+        'hamming':np.mean(hamming)
+    }
+    
+    return model_outputs, metrics
