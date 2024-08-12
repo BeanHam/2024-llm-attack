@@ -303,12 +303,16 @@ def evaluate_model_challenging(model: AutoModelForCausalLM,
         decoded = np.array(
             re.sub('<.*?>', ' ', decoded).\
             replace('\n', ' ').\
+            replace('answer: ', ' ').\
+            replace('question: ', ' ').\
             translate(str.maketrans('', '', string.punctuation+'‘')).\
             split()
         )
         gt=question+"\n\n## ANSWER: "+answer
         gt = np.array(                
             gt.lower().replace('\n', ' ').\
+            replace('answer: ', ' ').\
+            replace('question: ', ' ').\
             translate(str.maketrans('', '', string.punctuation+'‘')).\
             split()
         )
