@@ -29,7 +29,6 @@ def main():
     parser.add_argument('--device', type=str, default='cuda', help='The device to mount the model on.')
     parser.add_argument('--hf_token_var', type=str, default='[your token]', help='hf login token')
     parser.add_argument('--use_model_prompt_defaults', type=str, default='llama3', help='Whether to use the default prompts for a model')
-    parser.add_argument('--challenging', type=str, default='yes', help='Whether to use the default prompts for a model')
     args = parser.parse_args()
  
     args.max_new_tokens=16
