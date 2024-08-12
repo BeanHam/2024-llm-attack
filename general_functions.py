@@ -306,7 +306,7 @@ def evaluate_model_challenging(model: AutoModelForCausalLM,
             translate(str.maketrans('', '', string.punctuation+'‘')).\
             split()
         )
-        gt=question+"\n\n## ANSWER:"+answer
+        gt=question+"\n\n## ANSWER: "+answer
         gt = np.array(                
             gt.lower().replace('\n', ' ').\
             translate(str.maketrans('', '', string.punctuation+'‘')).\
