@@ -33,7 +33,7 @@ def main():
  
     args.max_new_tokens=16
     args.suffix = MODEL_SUFFIXES[args.use_model_prompt_defaults]
-    args.save_path=f'inference_results/'
+    args.save_path=f'inference_results_challenging/'
     if args.hf_token_var:
         hf_login(token=getenv(args.hf_token_var))
     if not path.exists(args.save_path):
@@ -73,11 +73,11 @@ def main():
         # inference
         #------------
         model.eval()
-        model_outputs, metrics  = evaluate_model(model=model,
-                                                 tokenizer=tokenizer,
-                                                 data=train_data,
-                                                 max_new_tokens=args.max_new_tokens,
-                                                 remove_suffix=args.suffix)
+        model_outputs, metrics  = evaluate_model_challenging(model=model,
+                                                             tokenizer=tokenizer,
+                                                             data=train_data,
+                                                             max_new_tokens=args.max_new_tokens,
+                                                             remove_suffix=args.suffix)
 
         for k, v in metrics.items(): print(f'   {k}: {v}')
         with open(args.save_path+f"{checkpoint}.json", 'w') as f: json.dump(metrics, f)
